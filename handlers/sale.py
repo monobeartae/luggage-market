@@ -2,7 +2,9 @@ from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from models import get_member, get_members, create_sale
+from copy import deepcopy
+
+from models import get_member, get_members, create_sale, get_sales_count
 
 
 # =========================
@@ -13,6 +15,11 @@ async def open_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
     members = get_members(chat_id)
+    if len(members) == 0:
+        await update.message.reply_text(
+            "❌ No members found. Add members first using /addmember"
+        )
+        return
 
     # Parse price from command
     args = context.args
@@ -31,7 +38,7 @@ async def open_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Init state
     context.user_data["sale"] = {
-        "payer": members[0]["id"] if members else None,
+        "payee": members[0]["id"] if members else None,
         "price": price,
         "items": {m["id"]: 0 for m in members},
     }
@@ -46,12 +53,12 @@ async def open_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # =========================
 
 async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     query = update.callback_query
     await query.answer()
 
     data = query.data
     sale = context.user_data.get("sale")
+    prev = deepcopy(sale)
 
     if not sale:
         await query.edit_message_text("Session expired.")
@@ -61,20 +68,10 @@ async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = get_members(chat_id)
 
     # -------------------------
-    # PAYER SELECT
+    # payee SELECT
     # -------------------------
-    if data.startswith("sale_payer_"):
-        sale["payer"] = int(data.split("_")[-1])
-    # -------------------------
-    # PRICE SELECT
-    # -------------------------
-    elif data == "sale_edit_price":
-        context.user_data["sale_state"] = "awaiting_price"
-
-        await query.message.reply_text(
-            "Enter new price (e.g. 8 or 12.50):"
-        )
-        return
+    if data.startswith("sale_payee_"):
+        sale["payee"] = int(data.split("_")[-1])
 
     # -------------------------
     # PLUS
@@ -104,7 +101,9 @@ async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Cancelled")
         return
 
-    # re-render after EVERY action
+    if sale == prev: # prevent re-render
+        return
+    # re-render after action
     await query.edit_message_text(
         render_ui(sale, members),
         reply_markup=build_keyboard(members, sale),
@@ -121,9 +120,9 @@ def render_ui(sale, members):
 
     text = "💰 *Sale Builder*\n\n"
 
-    text += "Payer:\n"
+    text += "payee:\n"
     for m in members:
-        selected = "✅" if m["id"] == sale["payer"] else ""
+        selected = "✅" if m["id"] == sale["payee"] else ""
         text += f"{selected} {m['name']}\n"
 
     text += f"\nPrice: {sale['price']:.2f}\n\n"
@@ -150,21 +149,13 @@ def build_keyboard(members, sale):
 
     keyboard = []
 
-    # payer row (segmented control)
+    # payee row (segmented control)
     keyboard.append([
         InlineKeyboardButton(
             m["name"],
-            callback_data=f"sale_payer_{m['id']}"
+            callback_data=f"sale_payee_{m['id']}"
         )
         for m in members
-    ])
-
-    # price row
-    keyboard.insert(0, [
-        InlineKeyboardButton(
-            f"💰 Price: {sale['price']:.2f} (tap to edit)",
-            callback_data="sale_edit_price"
-        )
     ])
 
     # item controls
@@ -198,20 +189,20 @@ async def save_sale(query, context, sale):
     ]
 
     if not items:
-        await query.answer("No items selected", show_alert=True)
+        await query.answer("⚠️ Add at least 1 item before saving", show_alert=True)
         return
 
     sale_id = create_sale(
         chat_id=chat_id,
-        payer_member_id=sale["payer"],
+        payee_member_id=sale["payee"],
         sale_price=sale["price"],
         sale_datetime=datetime.now(),
         items=items,
     )
 
     context.user_data.pop("sale", None)
-    text = f"✅ Saved sale #{sale_id}"
-    text += f"\n ${sale['price']:.2f} paid by {get_member(sale['payer'])['name']}"
+    text = f"✅ Saved sale #{get_sales_count(chat_id)}"
+    text += f"\n ${sale['price']:.2f} paid to {get_member(sale['payee'])['name']}"
     for owner, qty in sale["items"].items():
         if qty > 0:
             text += f"\n -> {get_member(owner)['name']}: {qty} item(s)"

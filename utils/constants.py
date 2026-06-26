@@ -88,7 +88,7 @@ COMMANDS = [
 
 class SaleState:
 
-    SELECT_PAYER = 0
+    SELECT_payee = 0
 
     ENTER_PRICE = 1
 
@@ -103,7 +103,7 @@ class SaleState:
 
 class Callback:
 
-    PAYER = "payer"
+    payee = "payee"
 
     PLUS = "plus"
 

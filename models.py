@@ -123,15 +123,15 @@ def get_member(member_id: int):
 # SALES
 ###############################################################################
 
-def create_sale(chat_id: int, payer_member_id: int, sale_price: float, sale_datetime, items):
+def create_sale(chat_id: int, payee_member_id: int, sale_price: float, sale_datetime, items):
 
     with get_connection() as conn:
         cur = conn.execute(
             """
-            INSERT INTO sales(chat_id, payer_member_id, sale_price, sale_datetime)
+            INSERT INTO sales(chat_id, payee_member_id, sale_price, sale_datetime)
             VALUES (?, ?, ?, ?)
             """,
-            (chat_id, payer_member_id, sale_price, sale_datetime.isoformat())
+            (chat_id, payee_member_id, sale_price, sale_datetime.isoformat())
         )
 
         sale_id = cur.lastrowid
@@ -178,10 +178,10 @@ def get_sales(chat_id) -> list[dict]:
             """
             SELECT
                 s.*,
-                m.name AS payer_name
+                m.name AS payee_name
             FROM sales s
             JOIN members m
-                ON s.payer_member_id = m.id
+                ON s.payee_member_id = m.id
             WHERE s.chat_id=?
             ORDER BY s.sale_datetime;
             """,
@@ -189,22 +189,21 @@ def get_sales(chat_id) -> list[dict]:
         ).fetchall()
 
         return [dict(row) for row in rows]
+    
+def get_sales_count(chat_id) -> int:
 
+    with get_connection() as conn:
 
-# def get_sale_items(sale_id: int):
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM sales
+            WHERE chat_id=?
+            """,
+            (chat_id,)
+        ).fetchone()
 
-#     with get_connection() as conn:
-
-#         rows = conn.execute(
-#             """
-#             SELECT *
-#             FROM sale_items
-#             WHERE sale_id=?
-#             """,
-#             (sale_id,)
-#         ).fetchall()
-
-#         return [dict(row) for row in rows]
+        return row["count"]
 
 def get_all_sale_items(chat_id: int) -> list[dict]:
 

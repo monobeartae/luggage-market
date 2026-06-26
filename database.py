@@ -76,13 +76,13 @@ def initialise_database() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id INTEGER NOT NULL,
 
-                payer_member_id INTEGER NOT NULL,
+                payee_member_id INTEGER NOT NULL,
 
                 sale_price REAL NOT NULL,
 
                 sale_datetime TEXT NOT NULL,
 
-                FOREIGN KEY (payer_member_id)
+                FOREIGN KEY (payee_member_id)
                     REFERENCES members(id)
                     ON DELETE RESTRICT
             );

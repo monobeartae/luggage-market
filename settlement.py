@@ -34,7 +34,7 @@ def calculate_money_received(sales):
 
     for sale in sales:
 
-        totals[sale["payer_member_id"]] += sale["sale_price"]
+        totals[sale["payee_member_id"]] += sale["sale_price"]
 
     return dict(totals)
 
@@ -124,13 +124,13 @@ def calculate_transfers(revenue, received):
 
         if balance > 0.01:
 
-            creditors.append(
+            debtors.append(
                 [member, balance]
             )
 
         elif balance < -0.01:
 
-            debtors.append(
+            creditors.append(
                 [member, -balance]
             )
 
