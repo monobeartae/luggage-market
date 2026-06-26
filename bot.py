@@ -19,7 +19,13 @@ from telegram.ext import (
     MessageHandler,
 )
 
-from config import BOT_TOKEN
+import os; 
+
+from dotenv import load_dotenv
+load_dotenv() 
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
 from database import initialise_database
 
 from handlers.start import start
