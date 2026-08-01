@@ -26,6 +26,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         • /clearsales (optional) DATE → clear sales records
 
         ━━━━━━━━━━━━━━
+        👥 Payees
+        ━━━━━━━━━━━━━━
+        • /addpayment NAME → add a payment source
+        <i>i.e. /addpayment CASH → adds a payment source named CASH</i>
+        • /deletepayment NAME → delete a payment source
+        <i>i.e. /deletepayment CASH → deletes the payment source named CASH</i>
+
+        ━━━━━━━━━━━━━━
         👥 Members
         ━━━━━━━━━━━━━━
         • /addmember NAME → add a member

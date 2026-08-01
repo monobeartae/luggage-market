@@ -33,6 +33,8 @@ from handlers.help import help_command
 from handlers.add_member import add_member_command
 from handlers.delete_member import delete_member_command
 from handlers.list_members import list_members_command
+from handlers.add_payment import add_payment_source_command
+from handlers.delete_payment import delete_payment_source_command
 from handlers.sale import open_sale_ui, handle_sale_ui, handle_sale_text
 from handlers.summary import summary
 from handlers.clear_sales import clear_sales
@@ -70,6 +72,10 @@ def register_handlers(app: Application) -> None:
     app.add_handler(CommandHandler("addmember", add_member_command))
     app.add_handler(CommandHandler("deletemember", delete_member_command))
     app.add_handler(CommandHandler("members", list_members_command))
+
+    # Payment sources
+    app.add_handler(CommandHandler("addpayment", add_payment_source_command))
+    app.add_handler(CommandHandler("deletepayment", delete_payment_source_command))
 
     # Sales
     app.add_handler(CommandHandler("sale", open_sale_ui))

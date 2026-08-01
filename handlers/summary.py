@@ -13,6 +13,7 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     (items, revenue, received, transfers) = settlement.build_summary(
         models.get_members(chat_id),
+        models.get_payment_sources(chat_id),
         models.get_sales(chat_id),
         models.get_all_sale_items(chat_id)
     )

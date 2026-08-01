@@ -26,15 +26,14 @@ def calculate_money_received(sales):
     """
     Returns:
     {
-        member_id: total_money_received
+        payment_source_id: total_money_received
     }
     """
 
     totals = defaultdict(float)
 
     for sale in sales:
-
-        totals[sale["payee_member_id"]] += sale["sale_price"]
+        totals[sale["payment_source_id"]] += sale["sale_price"]
 
     return dict(totals)
 
@@ -90,95 +89,66 @@ def calculate_revenue(sales, sale_items):
     return dict(revenue)
 
 
-def calculate_transfers(revenue, received):
+def calculate_transfers(
+    revenue,
+    received,
+):
     """
-    Computes who should pay whom.
-
     Returns
 
     [
         {
-            "from": member_id,
+            "from": payment_source_id,
             "to": member_id,
-            "amount": 15.50
+            "amount": 10.50
         }
     ]
     """
 
-    balances = {}
+    total_received = round(sum(received.values()), 2)
+    total_revenue = round(sum(revenue.values()), 2)
 
-    members = set(revenue.keys()) | set(received.keys())
-
-    for member in members:
-
-        balances[member] = (
-            received.get(member, 0)
-            -
-            revenue.get(member, 0)
+    if abs(total_received - total_revenue) > 0.01:
+        raise ValueError(
+            "Revenue does not match money received."
         )
-
-    creditors = []
-    debtors = []
-
-    for member, balance in balances.items():
-
-        if balance > 0.01:
-
-            debtors.append(
-                [member, balance]
-            )
-
-        elif balance < -0.01:
-
-            creditors.append(
-                [member, -balance]
-            )
 
     transfers = []
 
-    creditor_index = 0
-    debtor_index = 0
+    remaining = revenue.copy()
 
-    while (
-        creditor_index < len(creditors)
-        and
-        debtor_index < len(debtors)
-    ):
+    for payment_source_id, available in received.items():
 
-        creditor = creditors[creditor_index]
-        debtor = debtors[debtor_index]
+        available = round(available, 2)
 
-        amount = min(
-            creditor[1],
-            debtor[1]
-        )
+        for member_id in list(remaining.keys()):
 
-        transfers.append({
+            if available < 0.01:
+                break
 
-            "from": debtor[0],
+            amount = min(
+                available,
+                remaining[member_id]
+            )
 
-            "to": creditor[0],
+            if amount <= 0:
+                continue
 
-            "amount": round(amount, 2)
+            transfers.append({
+                "from": payment_source_id,
+                "to": member_id,
+                "amount": round(amount, 2)
+            })
 
-        })
-
-        creditor[1] -= amount
-        debtor[1] -= amount
-
-        if creditor[1] < 0.01:
-
-            creditor_index += 1
-
-        if debtor[1] < 0.01:
-
-            debtor_index += 1
+            available -= amount
+            remaining[member_id] -= amount
 
     return transfers
 
 
 def build_summary(
     members,
+    payment_sources,
     sales,
     sale_items,
 ):
@@ -189,6 +159,11 @@ def build_summary(
     id_to_name = {
         member["id"]: member["name"]
         for member in members
+    }
+
+    payment_source_to_name = {
+        ps["id"]: ps["name"]
+        for ps in payment_sources
     }
 
     revenue = calculate_revenue(
@@ -215,8 +190,8 @@ def build_summary(
     }
 
     received = {
-        id_to_name[member_id]: amount
-        for member_id, amount in received.items()
+        payment_source_to_name[source_id]: amount
+        for source_id, amount in received.items()
     }
 
     items = {
@@ -226,11 +201,11 @@ def build_summary(
 
     transfers = [
         {
-            "from": id_to_name[t["from"]],
+            "from": payment_source_to_name[t["from"]],
             "to": id_to_name[t["to"]],
             "amount": t["amount"],
         }
         for t in transfers
     ]
-
+    
     return (items, revenue, received, transfers)

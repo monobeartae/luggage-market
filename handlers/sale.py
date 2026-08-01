@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 
 from copy import deepcopy
 
-from models import get_member, get_members, create_sale, get_sales_count
+from models import get_member, get_members, create_sale, get_payment_source, get_payment_sources, get_sales_count
 
 
 # =========================
@@ -15,6 +15,7 @@ async def open_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
     members = get_members(chat_id)
+    payees = get_payment_sources(chat_id)
     if len(members) == 0:
         await update.message.reply_text(
             "❌ No members found. Add members first using /addmember"
@@ -38,14 +39,14 @@ async def open_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Init state
     context.user_data["sale"] = {
-        "payee": members[0]["id"] if members else None,
+        "payee": payees[0]["id"] if payees else None,
         "price": price,
         "items": {m["id"]: 0 for m in members},
     }
 
     await update.message.reply_text(
-        render_ui(context.user_data["sale"], members),
-        reply_markup=build_keyboard(members, context.user_data["sale"]),
+        render_ui(context.user_data["sale"], payees, members),
+        reply_markup=build_keyboard(payees, members, context.user_data["sale"]),
     )
 
 # =========================
@@ -66,6 +67,7 @@ async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = query.message.chat.id
     members = get_members(chat_id)
+    payees = get_payment_sources(chat_id)
 
     # -------------------------
     # payee SELECT
@@ -105,8 +107,8 @@ async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     # re-render after action
     await query.edit_message_text(
-        render_ui(sale, members),
-        reply_markup=build_keyboard(members, sale),
+        render_ui(sale, payees, members),
+        reply_markup=build_keyboard(payees, members, sale),
     )
 
 
@@ -114,16 +116,16 @@ async def handle_sale_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # UI RENDERING
 # =========================
 
-def render_ui(sale, members):
+def render_ui(sale, payment_sources, members):
 
     id_to_name = {m["id"]: m["name"] for m in members}
 
     text = "💰 *Sale Builder*\n\n"
 
     text += "payee:\n"
-    for m in members:
-        selected = "✅" if m["id"] == sale["payee"] else ""
-        text += f"{selected} {m['name']}\n"
+    for p in payment_sources:
+        selected = "✅" if p["id"] == sale["payee"] else ""
+        text += f"{selected} {p['name']}\n"
 
     text += f"\nPrice: {sale['price']:.2f}\n\n"
 
@@ -145,17 +147,17 @@ def render_ui(sale, members):
 # KEYBOARD
 # =========================
 
-def build_keyboard(members, sale):
+def build_keyboard(payment_sources, members, sale):
 
     keyboard = []
 
     # payee row (segmented control)
     keyboard.append([
         InlineKeyboardButton(
-            m["name"],
-            callback_data=f"sale_payee_{m['id']}"
+            p["name"],
+            callback_data=f"sale_payee_{p['id']}"
         )
-        for m in members
+        for p in payment_sources
     ])
 
     # item controls
@@ -202,7 +204,7 @@ async def save_sale(query, context, sale):
 
     context.user_data.pop("sale", None)
     text = f"✅ Saved sale #{get_sales_count(chat_id)}"
-    text += f"\n ${sale['price']:.2f} paid to {get_member(sale['payee'])['name']}"
+    text += f"\n ${sale['price']:.2f} paid to {get_payment_source(sale['payee'])['name']}"
     for owner, qty in sale["items"].items():
         if qty > 0:
             text += f"\n -> {get_member(owner)['name']}: {qty} item(s)"
@@ -233,9 +235,10 @@ async def handle_sale_text(update: Update, context):
     context.user_data["sale_state"] = None
 
     chat_id = update.effective_chat.id
+    payees = get_payment_sources(chat_id)
     members = get_members(chat_id)
 
     await update.message.reply_text(
-        render_ui(sale, members),
-        reply_markup=build_keyboard(members, sale),
+        render_ui(sale, payees, members),
+        reply_markup=build_keyboard(payees, members, sale),
     )

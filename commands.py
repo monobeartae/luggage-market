@@ -14,6 +14,9 @@ def get_commands():
         BotCommand("addmember", "Add member"),
         BotCommand("deletemember", "Delete member"),
 
+        BotCommand("addpayment", "Add payment source"),
+        BotCommand("deletepayment", "Delete payment source"),
+
         BotCommand("clearsales", "Clear sales"),
 
     ]

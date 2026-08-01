@@ -118,6 +118,115 @@ def get_member(member_id: int):
 
         return dict(row)
 
+###############################################################################
+# PAYMENT SOURCES
+###############################################################################
+
+def add_payment_source(chat_id, name: str) -> bool:
+    """
+    Adds a payment source.
+
+    Returns:
+        True if successful
+        False if duplicate name
+    """
+
+    try:
+        with get_connection() as conn:
+
+            conn.execute(
+                """
+                INSERT INTO payment_sources(chat_id, name)
+                VALUES(?, ?)
+                """,
+                (chat_id, name.strip())
+            )
+
+            conn.commit()
+
+            return True
+
+    except Exception:
+        return False
+
+
+def delete_payment_source(chat_id, name: str) -> bool:
+    """
+    Deletes a payment source.
+
+    Returns False if:
+        - payment source does not exist
+        - payment source has existing sales
+    """
+
+    try:
+        with get_connection() as conn:
+
+            cursor = conn.execute(
+                """
+                DELETE FROM payment_sources
+                WHERE chat_id = ? AND name = ?
+                """,
+                (chat_id, name.strip())
+            )
+
+            conn.commit()
+
+            return cursor.rowcount > 0
+
+    except Exception:
+        return False
+
+
+def get_payment_sources(chat_id) -> list[dict]:
+    """
+    Returns every payment source.
+
+    Example
+
+    [
+        {
+            "id":1,
+            "name":"Cash"
+        }
+    ]
+    """
+
+    with get_connection() as conn:
+
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM payment_sources
+            WHERE chat_id = ?
+            ORDER BY name
+            """,
+            (chat_id,)
+        ).fetchall()
+
+        return [dict(row) for row in rows]
+
+
+def get_payment_source(payment_source_id: int):
+
+    with get_connection() as conn:
+
+        row = conn.execute(
+            """
+            SELECT *
+            FROM payment_sources
+            WHERE id=?
+            """,
+            (payment_source_id,)
+        ).fetchone()
+
+        if row is None:
+            return None
+
+        return dict(row)
+
+
+
 
 ###############################################################################
 # SALES

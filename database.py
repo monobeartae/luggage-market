@@ -72,18 +72,29 @@ def initialise_database() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS payment_sources (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );
+            """
+        )
+
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS sales (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id INTEGER NOT NULL,
 
-                payee_member_id INTEGER NOT NULL,
+                payment_source_id INTEGER NOT NULL,
 
                 sale_price REAL NOT NULL,
 
                 sale_datetime TEXT NOT NULL,
 
-                FOREIGN KEY (payee_member_id)
-                    REFERENCES members(id)
+                FOREIGN KEY (payment_source_id)
+                    REFERENCES payment_sources(id)
                     ON DELETE RESTRICT
             );
             """
