@@ -22,6 +22,8 @@ from telegram.ext import (
 import os; 
 
 from dotenv import load_dotenv
+
+from handlers.delete_sale import delete_sale_command
 load_dotenv() 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -82,6 +84,7 @@ def register_handlers(app: Application) -> None:
     app.add_handler(CallbackQueryHandler(handle_sale_ui))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_sale_text))
     app.add_handler(CommandHandler("clearsales", clear_sales))
+    app.add_handler(CommandHandler("deletesale", delete_sale_command))
 
 
     # Reports

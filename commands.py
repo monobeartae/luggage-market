@@ -18,5 +18,6 @@ def get_commands():
         BotCommand("deletepayment", "Delete payment source"),
 
         BotCommand("clearsales", "Clear sales"),
+        BotCommand("deletesale", "Delete sale"),
 
     ]

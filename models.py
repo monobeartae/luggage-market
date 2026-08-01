@@ -232,15 +232,15 @@ def get_payment_source(payment_source_id: int):
 # SALES
 ###############################################################################
 
-def create_sale(chat_id: int, payee_member_id: int, sale_price: float, sale_datetime, items):
+def create_sale(chat_id: int, sale_no:int, payee_member_id: int, sale_price: float, sale_datetime, items):
 
     with get_connection() as conn:
         cur = conn.execute(
             """
-            INSERT INTO sales(chat_id, payee_member_id, sale_price, sale_datetime)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO sales(chat_id, payee_member_id, sale_price, sale_datetime, sale_no)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (chat_id, payee_member_id, sale_price, sale_datetime.isoformat())
+            (chat_id, payee_member_id, sale_price, sale_datetime.isoformat(), sale_no)
         )
 
         sale_id = cur.lastrowid
@@ -299,20 +299,75 @@ def get_sales(chat_id) -> list[dict]:
 
         return [dict(row) for row in rows]
     
-def get_sales_count(chat_id) -> int:
+def get_next_sale_num(chat_id) -> int:
 
     with get_connection() as conn:
 
         row = conn.execute(
             """
-            SELECT COUNT(*) AS count
+            SELECT COALESCE(MAX(sale_no), 0) + 1
             FROM sales
-            WHERE chat_id=?
+            WHERE chat_id = ?
             """,
             (chat_id,)
         ).fetchone()
 
         return row["count"]
+    
+def get_sale_by_number(chat_id, sale_no):
+
+    with get_connection() as conn:
+
+        row = conn.execute(
+            """
+            SELECT *
+            FROM sales
+            WHERE chat_id = ?
+            AND sale_no = ?
+            """,
+            (chat_id, sale_no)
+        ).fetchone()
+
+        return dict(row) if row else None
+    
+def delete_sale(chat_id, sale_no):
+
+    with get_connection() as conn:
+
+        sale = conn.execute(
+            """
+            SELECT id
+            FROM sales
+            WHERE chat_id = ?
+            AND sale_no = ?
+            """,
+            (chat_id, sale_no)
+        ).fetchone()
+
+        if sale is None:
+            return False
+
+        sale_id = sale["id"]
+
+        conn.execute(
+            """
+            DELETE FROM sale_items
+            WHERE sale_id = ?
+            """,
+            (sale_id,)
+        )
+
+        conn.execute(
+            """
+            DELETE FROM sales
+            WHERE id = ?
+            """,
+            (sale_id,)
+        )
+
+        conn.commit()
+
+        return True
 
 def get_all_sale_items(chat_id: int) -> list[dict]:
 

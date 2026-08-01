@@ -93,6 +93,8 @@ def initialise_database() -> None:
 
                 sale_datetime TEXT NOT NULL,
 
+                sale_no INTEGER NOT NULL,
+
                 FOREIGN KEY (payment_source_id)
                     REFERENCES payment_sources(id)
                     ON DELETE RESTRICT

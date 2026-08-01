@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 
 from copy import deepcopy
 
-from models import get_member, get_members, create_sale, get_payment_source, get_payment_sources, get_sales_count
+from models import get_member, get_members, create_sale, get_next_sale_num, get_payment_source, get_payment_sources
 
 
 # =========================
@@ -193,9 +193,12 @@ async def save_sale(query, context, sale):
     if not items:
         await query.answer("⚠️ Add at least 1 item before saving", show_alert=True)
         return
+    
+    sale_no = get_next_sale_num(chat_id)
 
     sale_id = create_sale(
         chat_id=chat_id,
+        sale_no=sale_no,
         payee_member_id=sale["payee"],
         sale_price=sale["price"],
         sale_datetime=datetime.now(),
@@ -203,7 +206,7 @@ async def save_sale(query, context, sale):
     )
 
     context.user_data.pop("sale", None)
-    text = f"✅ Saved sale #{get_sales_count(chat_id)}"
+    text = f"✅ Saved sale #{sale_no} (ID: {sale_id})"
     text += f"\n ${sale['price']:.2f} paid to {get_payment_source(sale['payee'])['name']}"
     for owner, qty in sale["items"].items():
         if qty > 0:

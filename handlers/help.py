@@ -24,6 +24,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         • /sale PRICE → create a sale
         <i>i.e. /sale 12 → creates a sale of $12</i>
         • /clearsales (optional) DATE → clear sales records
+        • /deletesale SALE_NO → delete a specific sale
+
 
         ━━━━━━━━━━━━━━
         👥 Payees
