@@ -258,17 +258,24 @@ def create_sale(chat_id: int, sale_no:int, payee_member_id: int, sale_price: flo
 
         return sale_id
 
+def delete_sale(chat_id: int, sale_no: int) -> bool:
+    """
+    Deletes a sale by its chat-local sale number.
 
-def delete_sale(sale_id: int) -> bool:
+    Returns:
+        True if the sale was deleted.
+        False if the sale does not exist.
+    """
 
     with get_connection() as conn:
 
         cursor = conn.execute(
             """
             DELETE FROM sales
-            WHERE id=?
+            WHERE chat_id = ?
+              AND sale_no = ?
             """,
-            (sale_id,)
+            (chat_id, sale_no)
         )
 
         conn.commit()
@@ -305,14 +312,14 @@ def get_next_sale_num(chat_id) -> int:
 
         row = conn.execute(
             """
-            SELECT COALESCE(MAX(sale_no), 0) + 1
+            SELECT COALESCE(MAX(sale_no), 0) + 1 AS next_sale_no
             FROM sales
             WHERE chat_id = ?
             """,
             (chat_id,)
         ).fetchone()
 
-        return row["count"]
+        return row["next_sale_no"]
     
 def get_sale_by_number(chat_id, sale_no):
 
@@ -348,14 +355,6 @@ def delete_sale(chat_id, sale_no):
             return False
 
         sale_id = sale["id"]
-
-        conn.execute(
-            """
-            DELETE FROM sale_items
-            WHERE sale_id = ?
-            """,
-            (sale_id,)
-        )
 
         conn.execute(
             """
