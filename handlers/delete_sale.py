@@ -2,6 +2,9 @@
 /deletesale 5
 """
 
+from models import delete_sale
+
+
 async def delete_sale_command(update, context):
 
     chat_id = update.effective_chat.id
