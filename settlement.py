@@ -26,14 +26,14 @@ def calculate_money_received(sales):
     """
     Returns:
     {
-        payment_source_id: total_money_received
+        payee_member_id: total_money_received
     }
     """
 
     totals = defaultdict(float)
 
     for sale in sales:
-        totals[sale["payment_source_id"]] += sale["sale_price"]
+        totals[sale["payee_member_id"]] += sale["sale_price"]
 
     return dict(totals)
 
@@ -207,5 +207,5 @@ def build_summary(
         }
         for t in transfers
     ]
-    
+
     return (items, revenue, received, transfers)
