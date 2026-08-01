@@ -99,6 +99,11 @@ def initialise_database() -> None:
                     REFERENCES payment_sources(id)
                     ON DELETE RESTRICT
             );
+            """
+        )
+
+        conn.execute(
+            """
             ALTER TABLE sales
             ADD COLUMN sale_no INTEGER;
             """
